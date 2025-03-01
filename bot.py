@@ -105,33 +105,37 @@ async def farm_cmd(message: Message):
         await message.reply(f"❌ Ты можешь фармить зефирки только раз в 5 минут. Попробуй еще через {remaining_time} секунд.", reply_markup=get_main_menu())
         return
 
-    # Генерація випадкового числа, яке користувач має вгадати
-    random_number = random.randint(1, 10)
-    data[user_id]["last_farm_time"] = current_time  # Оновлюємо час фармлення
-    save_data(data)
+    # Запит на введення числа
+    await message.reply(f"💬 Напиши число от 1 до 10 для фарма зефирок.", reply_markup=get_main_menu())
 
-    # Просимо користувача ввести число
-    await message.reply(f"💬 Напиши число от 1 до 10, чтобы получить зефирки.", reply_markup=get_main_menu())
-
-    # Зберігаємо правильну відповідь для перевірки
-    data[user_id]["farm_answer"] = random_number
+    # Зберігаємо число для фармлення
+    data[user_id]["farm_number"] = random.randint(1, 10)  # Генерація числа для фармлення
     save_data(data)
 
 # Перевірка відповіді на фармлення
-@dp.message_handler()
+@dp.message_handler(lambda message: message.text.isdigit())
 async def check_farm_answer(message: Message):
     user_id = str(message.from_user.id)
     data = load_data()
 
-    if user_id in data and "farm_answer" in data[user_id]:
-        correct_number = data[user_id]["farm_answer"]
-        if message.text.isdigit() and int(message.text) == correct_number:
-            # Додаємо зефірки
-            data[user_id]["marshmallows"] += random.randint(5, 20)  # Випадкове значення зефірок
+    if user_id in data and "farm_number" in data[user_id]:
+        # Користувач може використати введене число
+        user_number = int(message.text)
+
+        # Перевіряємо, чи правильне число
+        correct_number = data[user_id]["farm_number"]
+
+        if user_number == correct_number:
+            # Додаємо зефірки в залежності від введеного числа
+            earned_marshmallows = user_number * 5  # Кількість зефірок за введене число
+            data[user_id]["marshmallows"] += earned_marshmallows
+            data[user_id]["last_farm_time"] = int(time.time())  # Оновлюємо час фармлення
+            del data[user_id]["farm_number"]  # Видаляємо збережене число
             save_data(data)
-            await message.reply(f"🎉 Ты правильно угадал число! Ты получил зефирки! Теперь у тебя {data[user_id]['marshmallows']} зефирок.", reply_markup=get_main_menu())
+
+            await message.reply(f"🎉 Ты использовал правильное число {user_number}! Ты получил {earned_marshmallows} зефирок. Теперь у тебя {data[user_id]['marshmallows']} зефирок.", reply_markup=get_main_menu())
         else:
-            await message.reply(f"❌ Ты не угадал число. Правильный ответ был {correct_number}. Попробуй снова через 5 минут.", reply_markup=get_main_menu())
+            await message.reply(f"❌ Неправильное число! Попробуй еще раз.", reply_markup=get_main_menu())
 
 # Статистика
 @dp.message_handler(commands=['stats'])
