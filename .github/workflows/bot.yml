@@ -1,28 +1,28 @@
-name: Run Telegram Bot
+name: Run Bot
 
 on:
   push:
     branches:
       - main
-  schedule:
-    - cron: '*/30 * * * *' # Запуск кожні 30 хвилин
-  workflow_dispatch:
 
 jobs:
-  run-bot:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
+        run: |
+          pip install -r requirements.txt
+      
       - name: Run bot
-        run: python bot.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}  # Використовуємо секрет
+        run: |
+          python bot.py
